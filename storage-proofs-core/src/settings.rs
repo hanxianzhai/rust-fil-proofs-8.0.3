@@ -30,6 +30,8 @@ pub struct Settings {
     pub multicore_sdr_producers: usize,
     pub multicore_sdr_producer_stride: u64,
     pub multicore_sdr_lookahead: usize,
+    pub multicore_group_size: usize,
+    pub multicore_group_count: usize,
 }
 
 impl Default for Settings {
@@ -54,6 +56,8 @@ impl Default for Settings {
             multicore_sdr_producers: 3,
             multicore_sdr_producer_stride: 128,
             multicore_sdr_lookahead: 800,
+            multicore_group_size: 4,
+            multicore_group_count: 8,
         }
     }
 }

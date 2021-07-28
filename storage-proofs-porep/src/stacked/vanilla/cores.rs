@@ -3,7 +3,9 @@ use std::sync::{Mutex, MutexGuard};
 use anyhow::{format_err, Result};
 use hwloc::{Bitmap, ObjectType, Topology, TopologyObject, CPUBIND_THREAD};
 use lazy_static::lazy_static;
-use log::{debug, info, warn};
+//use log::{debug, info, warn};
+use log::{debug, warn};
+
 use storage_proofs_core::settings::SETTINGS;
 
 type CoreGroup = Vec<CoreIndex>;
@@ -149,32 +151,45 @@ fn core_groups(cores_per_unit: usize) -> Option<Vec<Mutex<Vec<CoreIndex>>>> {
     }
 
     assert_eq!(0, core_count % cache_count);
-    let mut group_size = core_count / cache_count;
-    let mut group_count = cache_count;
+    let settings = &SETTINGS;
+    //默认multicore_sdr_producers = 3 ，cores_per_unit = 3 + 1 =4
+    // num_group_size 可以设置为2，num_group_count 设置为16
+    let num_group_size = settings.multicore_group_size;
+    let num_group_count = settings.multicore_group_count;
 
-    if cache_count <= 1 {
-        // If there are not more than one shared caches, there is no benefit in trying to group cores by cache.
-        // In that case, prefer more groups so we can still bind cores and also get some parallelism.
-        // Create as many full groups as possible. The last group may not be full.
-        group_count = core_count / cores_per_unit;
-        group_size = cores_per_unit;
+    // let mut group_size = core_count / cache_count;
+    // let mut group_count = cache_count;
 
-        info!(
-            "found only {} shared cache(s), heuristically grouping cores into {} groups",
-            cache_count, group_count
-        );
-    } else {
-        debug!(
-            "Cores: {}, Shared Caches: {}, cores per cache (group_size): {}",
-            core_count, cache_count, group_size
-        );
-    }
+    // if cache_count <= 1 {
+    //     // If there are not more than one shared caches, there is no benefit in trying to group cores by cache.
+    //     // In that case, prefer more groups so we can still bind cores and also get some parallelism.
+    //     // Create as many full groups as possible. The last group may not be full.
+    //     group_count = core_count / cores_per_unit;
+    //     group_size = cores_per_unit;
 
-    let core_groups = (0..group_count)
+    //     info!(
+    //         "found only {} shared cache(s), heuristically grouping cores into {} groups",
+    //         cache_count, group_count
+    //     );
+    // } else {
+    //     debug!(
+    //         "Cores: {}, Shared Caches: {}, cores per cache (group_size): {}",
+    //         core_count, cache_count, group_size
+    //     );
+    // }
+
+    debug!(
+        "Cores: {}, Shared Caches: {}, cores per cache (num_group_size): {}, cores_per_unit: {}",
+        core_count, cache_count, num_group_size, cores_per_unit
+    );
+
+    
+
+    let core_groups = (0..num_group_count)
         .map(|i| {
-            (0..group_size)
+            (0..num_group_size)
                 .map(|j| {
-                    let core_index = i * group_size + j;
+                    let core_index = i * num_group_size + j;
                     assert!(core_index < core_count);
                     CoreIndex(core_index)
                 })
